@@ -1,8 +1,14 @@
 from app import app
-from flask import Flask, request
+from flask import Flask, request, jsonify, abort
 import jwt
 from dotenv import dotenv_values
+import pandas as pd
 from functools import wraps
+from app.services.calc_days import calcDays
+from app.services.holidays import holidays
+from app.services.getDatesInOut import getDatesInOut
+from app.services.employees_info import employee_info_mapping
+from app.api.api import getMetas, getMercadorias, getServicos
 
 # Carrega os valores do .env
 config = dotenv_values(".env")
@@ -44,9 +50,134 @@ def index():
 @app.route('/token', methods=['POST'])
 @verify_token
 def token():
-    return f'Token validado com sucesso: {token}', 200
+    return f'Token validado com sucesso.', 200
 
-@app.route('/dias-uteis/<mes>', methods=['POST'])
+@app.route('/dias-uteis/<mes>/<ano>/<filial>', methods=['POST'])
 @verify_token
-def dias_uteis(mes):
-    return f"Dias úteis do mes {mes}"
+def dias_uteis(mes, ano, filial):
+    
+    dias_uteis, dias_passados = calcDays(int(mes), int(ano), holidays[filial])
+
+    # Cria um dicionário com os resultados
+    resultado = {
+        'dias_uteis': dias_uteis,
+        'dias_passados': dias_passados,
+        'dias_restantes': dias_uteis - dias_passados
+    }
+    
+    # Retorna a resposta no formato JSON
+    return jsonify(resultado), 200
+
+@app.route('/resumo-vendas/<mes>/<ano>/<filial>', methods=['POST'])
+@verify_token
+def resumo(mes, ano, filial):
+
+    dtInicial, dtFinal = getDatesInOut()
+
+        # ================================ Carregando os dataframes ================================
+    df_metas = getMetas(dtInicial, dtFinal)
+    df_mercadorias = getMercadorias(dtInicial, dtFinal)
+    df_servicos = getServicos(dtInicial, dtFinal)
+
+    # ==================================== Verifica se houve erro na resposta da API ====================================
+    if df_metas is None:
+        abort(404, "A resposta da API/Metas não é um DataFrame válido")
+
+    if df_mercadorias is None:
+        abort(404, "A resposta da API/Mercadorias não é um DataFrame válido")
+
+    if df_servicos is None:
+        abort(404, "A resposta da API/Serviços não é um DataFrame válido")
+
+    # ===================================== Concatena todos os vendedores da empresa ====================================
+    vendedores = []
+    consultores = []
+
+    for nome, info in employee_info_mapping.items():
+        if info["canal"] == "balcao":
+            vendedores.append(nome)
+        elif info["canal"] == "oficina":
+            consultores.append(nome)
+
+    # ================================== CALCULA E ORGANIZA AS INFORMAÇÃO NO DF_FINAL ===================================
+    # Metas de MERCADORIAS por filial
+    df_metas = df_metas[df_metas['vendedor'].isin(vendedores + consultores)]
+    df_metas_mercadorias = df_metas[df_metas['tipo'] == "MERCADORIAS"]
+    df_metas_mercadorias = df_metas_mercadorias.groupby('filial')[
+        'valormeta'].sum()
+
+    # Metas de SERVIÇOS por filial
+    df_metas = df_metas[df_metas['vendedor'].isin(vendedores + consultores)]
+    df_metas_servicos = df_metas[df_metas['tipo'] == "SERVIÇOS"]
+    df_metas_servicos = df_metas_servicos.groupby('filial')['valormeta'].sum()
+
+    # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
+    df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(
+        vendedores + consultores)]
+
+    # Vendas de mercadorias por filial
+    df_mercadorias_filial = df_mercadorias.groupby(
+        'filial')['totalmercadoria'].sum()
+
+    # Junta os DataFrames METAS e MERCADORIAS com base na coluna "empresa"
+    df_mercadorias_final = pd.merge(
+        df_metas_mercadorias, df_mercadorias_filial, on='filial')
+    perc = df_mercadorias_final['totalmercadoria'] / \
+        df_mercadorias_final['valormeta'] * 100
+    df_mercadorias_final["% Peças"] = perc.round(2)
+
+    # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
+    df_servicos = df_servicos[df_servicos['vendedor'].isin(
+        vendedores + consultores)]
+
+    # Vendas de serviços/MO por filial
+    df_servicos_filial = df_servicos.groupby('filial')['servico_e_cortesia'].sum()
+
+    # Junta os DataFrames METAS e SERVIÇOS com base na coluna "empresa"
+    df_servicos_final = pd.merge(
+        df_metas_servicos, df_servicos_filial, on='filial')
+    perc = df_servicos_final['servico_e_cortesia'] / \
+        df_servicos_final['valormeta'] * 100
+    df_servicos_final["% Serviços"] = perc.round(2)
+
+    # Junta as informações de METAS e VENDAS de MERCADORIAS e SERVIÇOS
+    df_final = pd.merge(df_mercadorias_final, df_servicos_final, on='filial')
+    df_final["Meta PSC"] = df_final["valormeta_x"] + df_final["valormeta_y"]
+    df_final["R$ PSC"] = df_final["totalmercadoria"] + \
+        df_final["servico_e_cortesia"]
+    perc = df_final["R$ PSC"] / df_final["Meta PSC"] * 100
+    df_final["% PSC"] = perc.round(2)
+    df_final = df_final.reset_index()
+
+    # # Ordenar e renomear as colunas para ficar igual planilha
+    # df_final = df_final[["empresa", "valormeta_x", "totalmercadoria", "%Peças",
+    #                      "valormeta_y", "servico_e_cortesia", "%Serviços", "PSC Meta", "PSC Realizado"]]
+    df_final = df_final.rename(
+        columns={
+            'filial': 'Filial',
+            'totalmercadoria': 'R$ Peças',
+            'valormeta_x': 'Meta Peças',
+            'servico_e_cortesia': 'R$ Serviços',
+            'valormeta_y': 'Meta Serviços',
+        })
+
+    # Cria função que irá formatar os números
+    def formatar(valor):
+        valor_formatado = "{:,.2f}".format(valor)
+        valor_formatado = valor_formatado.replace(',', '_')
+        valor_formatado = valor_formatado.replace('.', ',')
+        valor_formatado = valor_formatado.replace('_', '.')
+
+        return valor_formatado
+
+    # Aplica a formatação para as colunas desejadas
+    colunas_para_formatar = ["Meta Peças", "R$ Peças", "% Peças",
+                            "Meta Serviços", "R$ Serviços", "% Serviços", "Meta PSC", "R$ PSC", "% PSC"]
+    for coluna in colunas_para_formatar:
+        df_final[coluna] = df_final[coluna].apply(formatar)
+
+    # Converte o DataFrame para um dicionário
+    dados_formatados = df_final.to_dict(orient='records')
+
+    return jsonify(dados_formatados)
+    
