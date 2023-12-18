@@ -1,19 +1,19 @@
 # Estrutura inicial do projeto
-flask-api/
-|--.venv/
-|--app/
-|   |--init__.py
-|   |--routes.py
-|   |--...
-|--.env
-|--.gitignore
-|--app.py
-|--docker-compose.yml
-|--Dockerfile
-|--requirements.txt
-|--readme.md
-|--...
-
+flask-api/  
+|--.venv/  
+|--app/  
+|   |--init__.py  
+|   |--routes.py  
+|   |--...  
+|--.env  
+|--.gitignore  
+|--app.py  
+|--docker-compose.yml  
+|--Dockerfile  
+|--requirements.txt  
+|--readme.md  
+|--...  
+  
 ## Start do projeto no ambiente docker
 docker compose up -d    --> inicia o docker
 docker compose down     --> para o docker  
