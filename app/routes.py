@@ -50,7 +50,10 @@ def index():
 @app.route('/token', methods=['POST'])
 @verify_token
 def token():
-    return f'Token validado com sucesso.', 200
+    resultado = {
+        "message": "Token validado com sucesso."
+    }
+    return jsonify(resultado), 200
 
 @app.route('/dias-uteis/<mes>/<ano>/<filial>', methods=['POST'])
 @verify_token
@@ -60,9 +63,11 @@ def dias_uteis(mes, ano, filial):
 
     # Cria um dicionário com os resultados
     resultado = {
-        'dias_uteis': dias_uteis,
-        'dias_passados': dias_passados,
-        'dias_restantes': dias_uteis - dias_passados
+        "dias-uteis":  {
+            'total': dias_uteis,
+            'passados': dias_passados,
+            'restantes': dias_uteis - dias_passados
+        }
     }
     
     # Retorna a resposta no formato JSON
