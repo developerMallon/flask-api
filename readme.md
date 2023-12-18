@@ -1,4 +1,4 @@
-# Estrutura inicial do projeto
+## Estrutura inicial do projeto
 flask-api/  
 |--.venv/  
 |--app/  
