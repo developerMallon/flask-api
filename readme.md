@@ -20,7 +20,21 @@ docker compose down     --> para o docker
 docker compose pull     --> atualiza o conteudo do docker  
 
 ## Start no projeto fora do docker
-.\.venv\Scripts\activate    --> ativa o ambiente virtual  
-pip install -r requirements.txt --> instala as dependencias do projeto  
-python app.py   --> roda o projeto  
+python -m venv .venv                --> criar o embiente virtual (windows)  
+.\.venv\Scripts\activate            --> ativa o ambiente virtual  (windows) 
   
+python3 -m venv .venv                --> criar o embiente virtual (linux)   
+source .venv/bin/activate           --> ativa o ambiente virtual  (linux)  
+  
+pip install -r requirements.txt     --> instala as dependencias do projeto  
+python app.py                       --> rodar o projeto  
+deactivate                          --> sair do ambiente virtual
+
+## Atualizar as dependências do projeto (após instalar bibliotecas)
+pip freeze > requirements.txt
+
+## Colocar em produção no ambiente linux
+pip install gunicorn                        --> Instalar um servidor WSGI  
+gunicorn -w 4 -b 0.0.0.0:5000 app:app       --> Rodar o projeto  
+
+

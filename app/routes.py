@@ -45,7 +45,10 @@ def verify_token(f):
 
 @app.route('/')
 def index():
-    return 'Api flask rodando.'
+    resultado = {
+        "message": "Api flask rodando."
+    }
+    return jsonify(resultado), 200
 
 @app.route('/token', methods=['POST'])
 @verify_token
