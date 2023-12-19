@@ -37,4 +37,11 @@ pip freeze > requirements.txt
 pip install gunicorn                        --> Instalar um servidor WSGI  
 gunicorn -w 4 -b 0.0.0.0:5000 app:app       --> Rodar o projeto  
 
+## Importando projeto git
+sudo git clone git@github.com:developerMallon/flask-api.git
+sudo chown -R ti:ti flask-api
+cd flask-api
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
