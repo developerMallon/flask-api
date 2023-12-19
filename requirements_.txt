@@ -1,6 +1,7 @@
 Flask==3.0.0
 PyJWT==2.8.0
 python-dotenv==1.0.0
-pandas
-requests
-gunicorn
+Flask-Cors==4.0.0
+pandas==2.1.4
+requests==2.31.0
+gunicorn==21.2.0
