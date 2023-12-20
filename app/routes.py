@@ -132,7 +132,7 @@ def resumo(mes, ano, filial):
         df_metas_mercadorias, df_mercadorias_filial, on='filial')
     perc = df_mercadorias_final['totalmercadoria'] / \
         df_mercadorias_final['valormeta'] * 100
-    df_mercadorias_final["% Peças"] = perc.round(2)
+    df_mercadorias_final["percentagePecas"] = perc.round(2)
 
     # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
     df_servicos = df_servicos[df_servicos['vendedor'].isin(
@@ -146,15 +146,15 @@ def resumo(mes, ano, filial):
         df_metas_servicos, df_servicos_filial, on='filial')
     perc = df_servicos_final['servico_e_cortesia'] / \
         df_servicos_final['valormeta'] * 100
-    df_servicos_final["% Serviços"] = perc.round(2)
+    df_servicos_final["percentageServicos"] = perc.round(2)
 
     # Junta as informações de METAS e VENDAS de MERCADORIAS e SERVIÇOS
     df_final = pd.merge(df_mercadorias_final, df_servicos_final, on='filial')
-    df_final["Meta PSC"] = df_final["valormeta_x"] + df_final["valormeta_y"]
-    df_final["R$ PSC"] = df_final["totalmercadoria"] + \
+    df_final["metaPSC"] = df_final["valormeta_x"] + df_final["valormeta_y"]
+    df_final["vendidoPSC"] = df_final["totalmercadoria"] + \
         df_final["servico_e_cortesia"]
-    perc = df_final["R$ PSC"] / df_final["Meta PSC"] * 100
-    df_final["% PSC"] = perc.round(2)
+    perc = df_final["vendidoPSC"] / df_final["metaPSC"] * 100
+    df_final["percentagePSC"] = perc.round(2)
     df_final = df_final.reset_index()
 
     # # Ordenar e renomear as colunas para ficar igual planilha
@@ -162,11 +162,11 @@ def resumo(mes, ano, filial):
     #                      "valormeta_y", "servico_e_cortesia", "%Serviços", "PSC Meta", "PSC Realizado"]]
     df_final = df_final.rename(
         columns={
-            'filial': 'Filial',
-            'totalmercadoria': 'R$ Peças',
-            'valormeta_x': 'Meta Peças',
-            'servico_e_cortesia': 'R$ Serviços',
-            'valormeta_y': 'Meta Serviços',
+            'filial': 'filial',
+            'totalmercadoria': 'vendidoPecas',
+            'valormeta_x': 'metaPecas',
+            'servico_e_cortesia': 'vendidoServicos',
+            'valormeta_y': 'metaServicos',
         })
 
     # Cria função que irá formatar os números
@@ -179,8 +179,8 @@ def resumo(mes, ano, filial):
         return valor_formatado
 
     # Aplica a formatação para as colunas desejadas
-    colunas_para_formatar = ["Meta Peças", "R$ Peças", "% Peças",
-                            "Meta Serviços", "R$ Serviços", "% Serviços", "Meta PSC", "R$ PSC", "% PSC"]
+    colunas_para_formatar = ["metaPecas", "vendidoPecas", "percentagePecas",
+                            "metaServicos", "vendidoServicos", "percentageServicos", "metaPSC", "vendidoPSC", "percentagePSC"]
     for coluna in colunas_para_formatar:
         df_final[coluna] = df_final[coluna].apply(formatar)
 
