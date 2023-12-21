@@ -80,9 +80,13 @@ def dias_uteis(mes, ano, filial):
 @verify_token
 def resumo(mes, ano, filial):
 
+    # Calcula a data inicial e final do período que se quer avaliar com base no mes e ano informados na rota
     dtInicial, dtFinal = getDatesInOut(mes, ano)
 
-        # ================================ Carregando os dataframes ================================
+    # Calcula os dias úteis e os dias já passados do período que se quer avaliar com base no mes e ano informados na rota
+    dias_uteis, dias_passados = calcDays(int(mes), int(ano), holidays[filial])
+    
+    # ================================ Carregando os dataframes ================================
     df_metas = getMetas(dtInicial, dtFinal)
     df_mercadorias = getMercadorias(dtInicial, dtFinal)
     df_servicos = getServicos(dtInicial, dtFinal)
@@ -119,42 +123,44 @@ def resumo(mes, ano, filial):
     df_metas_servicos = df_metas[df_metas['tipo'] == "SERVIÇOS"]
     df_metas_servicos = df_metas_servicos.groupby('filial')['valormeta'].sum()
 
-    # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
-    df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(
-        vendedores + consultores)]
+    # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS pela apenas vendedores e consultores
+    df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(vendedores + consultores)]
 
-    # Vendas de mercadorias por filial
-    df_mercadorias_filial = df_mercadorias.groupby(
-        'filial')['totalmercadoria'].sum()
+    # Extrai as vendas de mercadorias por filial
+    df_mercadorias_filial = df_mercadorias.groupby('filial')['totalmercadoria'].sum()
 
     # Junta os DataFrames METAS e MERCADORIAS com base na coluna "empresa"
-    df_mercadorias_final = pd.merge(
-        df_metas_mercadorias, df_mercadorias_filial, on='filial')
-    perc = df_mercadorias_final['totalmercadoria'] / \
-        df_mercadorias_final['valormeta'] * 100
+    df_mercadorias_final = pd.merge(df_metas_mercadorias, df_mercadorias_filial, on='filial')
+    perc = df_mercadorias_final['totalmercadoria'] / df_mercadorias_final['valormeta'] * 100
     df_mercadorias_final["percentagePecas"] = perc.round(2)
 
-    # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
-    df_servicos = df_servicos[df_servicos['vendedor'].isin(
-        vendedores + consultores)]
+    # # Aqui precisa filtrar para não aparecerem os ESTOQUISTA/GARANTISTAS
+    df_servicos = df_servicos[df_servicos['vendedor'].isin(vendedores + consultores)]
 
     # Vendas de serviços/MO por filial
     df_servicos_filial = df_servicos.groupby('filial')['servico_e_cortesia'].sum()
 
     # Junta os DataFrames METAS e SERVIÇOS com base na coluna "empresa"
-    df_servicos_final = pd.merge(
-        df_metas_servicos, df_servicos_filial, on='filial')
-    perc = df_servicos_final['servico_e_cortesia'] / \
-        df_servicos_final['valormeta'] * 100
+    df_servicos_final = pd.merge(df_metas_servicos, df_servicos_filial, on='filial')
+    perc = df_servicos_final['servico_e_cortesia'] / df_servicos_final['valormeta'] * 100
     df_servicos_final["percentageServicos"] = perc.round(2)
 
     # Junta as informações de METAS e VENDAS de MERCADORIAS e SERVIÇOS
     df_final = pd.merge(df_mercadorias_final, df_servicos_final, on='filial')
+    
     df_final["metaPSC"] = df_final["valormeta_x"] + df_final["valormeta_y"]
-    df_final["vendidoPSC"] = df_final["totalmercadoria"] + \
-        df_final["servico_e_cortesia"]
+    df_final["vendidoPSC"] = df_final["totalmercadoria"] + df_final["servico_e_cortesia"]
     perc = df_final["vendidoPSC"] / df_final["metaPSC"] * 100
     df_final["percentagePSC"] = perc.round(2)
+
+    df_final["previsaoPecas"] = df_final["totalmercadoria"] / dias_passados * dias_uteis
+    df_final["previsaoServicos"] = df_final["servico_e_cortesia"] / dias_passados * dias_uteis
+    df_final["previsaoPSC"] = df_final["vendidoPSC"] / dias_passados * dias_uteis
+
+    df_final["percentagePrevisaoPecas"] = df_final["previsaoPecas"] / df_final["valormeta_x"] * 100
+    df_final["percentagePrevisaoServicos"] = df_final["previsaoServicos"] / df_final["valormeta_y"] * 100
+    df_final["percentagePrevisaoPSC"] = df_final["previsaoPSC"] / df_final["metaPSC"] * 100
+
     df_final = df_final.reset_index()
 
     # # Ordenar e renomear as colunas para ficar igual planilha
@@ -180,7 +186,10 @@ def resumo(mes, ano, filial):
 
     # Aplica a formatação para as colunas desejadas
     colunas_para_formatar = ["metaPecas", "vendidoPecas", "percentagePecas",
-                            "metaServicos", "vendidoServicos", "percentageServicos", "metaPSC", "vendidoPSC", "percentagePSC"]
+                            "metaServicos", "vendidoServicos", "percentageServicos", 
+                            "metaPSC", "vendidoPSC", "percentagePSC", 
+                            "previsaoPecas", "previsaoServicos", "previsaoPSC",
+                            "percentagePrevisaoPecas", "percentagePrevisaoServicos", "percentagePrevisaoPSC"]
     for coluna in colunas_para_formatar:
         df_final[coluna] = df_final[coluna].apply(formatar)
 
