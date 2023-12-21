@@ -80,7 +80,7 @@ def dias_uteis(mes, ano, filial):
 @verify_token
 def resumo(mes, ano, filial):
 
-    dtInicial, dtFinal = getDatesInOut()
+    dtInicial, dtFinal = getDatesInOut(mes, ano)
 
         # ================================ Carregando os dataframes ================================
     df_metas = getMetas(dtInicial, dtFinal)
