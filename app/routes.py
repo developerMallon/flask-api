@@ -148,15 +148,18 @@ def resumo(mes, ano, filial):
     # Junta as informações de METAS e VENDAS de MERCADORIAS e SERVIÇOS
     df_final = pd.merge(df_mercadorias_final, df_servicos_final, on='filial')
     
+    # Calcula valores e previsões referentes ao total do PSC (peças + serviços)
     df_final["metaPSC"] = df_final["valormeta_x"] + df_final["valormeta_y"]
     df_final["vendidoPSC"] = df_final["totalmercadoria"] + df_final["servico_e_cortesia"]
     perc = df_final["vendidoPSC"] / df_final["metaPSC"] * 100
     df_final["percentagePSC"] = perc.round(2)
 
+    # Calcula as previsões de vendas em valor
     df_final["previsaoPecas"] = df_final["totalmercadoria"] / dias_passados * dias_uteis
     df_final["previsaoServicos"] = df_final["servico_e_cortesia"] / dias_passados * dias_uteis
     df_final["previsaoPSC"] = df_final["vendidoPSC"] / dias_passados * dias_uteis
 
+    # Calcula as previsões de vendas em percentual em relação a meta
     df_final["percentagePrevisaoPecas"] = df_final["previsaoPecas"] / df_final["valormeta_x"] * 100
     df_final["percentagePrevisaoServicos"] = df_final["previsaoServicos"] / df_final["valormeta_y"] * 100
     df_final["percentagePrevisaoPSC"] = df_final["previsaoPSC"] / df_final["metaPSC"] * 100

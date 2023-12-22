@@ -9,39 +9,20 @@ services:
       - ./app:/flask-docker/app
     networks:
       - flask-api
-    depends_on:
-      - postgres
     command: gunicorn -w 4 -b 0.0.0.0:5000 app:app
     env_file:
       - .env
-
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: flask-api
-      POSTGRES_USER: developermallon
-      POSTGRES_PASSWORD: zbM@!!0n
-    networks:
-      - flask-api
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ti@mallon.com.br
-      PGADMIN_DEFAULT_PASSWORD: zbM@!!0n
-    ports:
-      - "5050:80"
-    networks:
-      - flask-api
-    depends_on:
-      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flask-api.rule=Host(`flask-api.mallon.clik`)"
+      # - "traefik.http.services.flask-api.loadbalancer.server.port=5000"
+      - "traefik.http.routers.flask-api.entrypoints=websecure"
+      - "traefik.http.routers.flask-api.tls.certresolver=leresolver"
+      - "traefik.http.routers.flask-api.service=flask-api"
 
 networks:
   flask-api:
     driver: bridge
 
-volumes:
-  postgres_data:
+
 
