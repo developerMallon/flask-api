@@ -1,0 +1,27 @@
+### Test API
+GET http://127.0.0.1:5000
+
+### Login na API-Mallon
+POST https://www.mallon.com.br/api/public/api/v1/login
+Content-type: application/json
+Accept: application/json
+
+{
+	"email": "@mallon.com.br",
+	"password": ""
+}
+
+### Test Token
+POST http://127.0.0.1:5000/token HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczpcL1wvd3d3Lm1hbGxvbi5jb20uYnJcL2FwaVwvcHVibGljXC9hcGlcL3YxXC9sb2dpbiIsImlhdCI6MTcwMzYyMjM3NCwiZXhwIjoxNzA2MjE0Mzc0LCJuYmYiOjE3MDM2MjIzNzQsImp0aSI6Ik9KYlNCbVR1UEY3a2xwRU0iLCJzdWIiOjMsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.FX3qm-AeZzrzZbtQxo7gFhGGjn3T_405Jjok-Zlkhvw
+
+### Retorna os dias úteis
+POST http://127.0.0.1:5000/dias-uteis/12/2023/mafra HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczpcL1wvd3d3Lm1hbGxvbi5jb20uYnJcL2FwaVwvcHVibGljXC9hcGlcL3YxXC9sb2dpbiIsImlhdCI6MTcwMzYyMjM3NCwiZXhwIjoxNzA2MjE0Mzc0LCJuYmYiOjE3MDM2MjIzNzQsImp0aSI6Ik9KYlNCbVR1UEY3a2xwRU0iLCJzdWIiOjMsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.FX3qm-AeZzrzZbtQxo7gFhGGjn3T_405Jjok-Zlkhvw
+
+### Test Token
+POST http://127.0.0.1:5000/resumo-vendas/12/2023/mafra HTTP/1.1
+content-type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczpcL1wvd3d3Lm1hbGxvbi5jb20uYnJcL2FwaVwvcHVibGljXC9hcGlcL3YxXC9sb2dpbiIsImlhdCI6MTcwMzYyMjM3NCwiZXhwIjoxNzA2MjE0Mzc0LCJuYmYiOjE3MDM2MjIzNzQsImp0aSI6Ik9KYlNCbVR1UEY3a2xwRU0iLCJzdWIiOjMsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.FX3qm-AeZzrzZbtQxo7gFhGGjn3T_405Jjok-Zlkhvw

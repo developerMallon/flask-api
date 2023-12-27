@@ -1,10 +1,10 @@
 version: '3'
 
 services:
-  app:
+  flask-api:
     build: .
     ports:
-      - "5000:5000"
+      - "443:5000"
     volumes:
       - ./app:/flask-docker/app
     networks:
@@ -14,15 +14,15 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.flask-api.rule=Host(`flask-api.mallon.clik`)"
-      # - "traefik.http.services.flask-api.loadbalancer.server.port=5000"
+      - "traefik.http.routers.flask-api.rule=Host(`flask-api.mallon.click`)"
+      - "traefik.http.services.flask-api.loadbalancer.server.port=5000"
       - "traefik.http.routers.flask-api.entrypoints=websecure"
       - "traefik.http.routers.flask-api.tls.certresolver=leresolver"
       - "traefik.http.routers.flask-api.service=flask-api"
 
 networks:
   flask-api:
-    driver: bridge
+    external: true
 
 
 
