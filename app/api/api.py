@@ -177,12 +177,10 @@ def getServicos(dtInicial, dtFinal):
                     ] = df_servicos.apply(define_emp, axis=1, result_type='expand')
         # ====================================================================
 
-        df_servicos["servico_e_cortesia"] = df_servicos["totalservico"] + \
-            df_servicos["totalcortesia"]
+        df_servicos["servico_e_cortesia"] = df_servicos["totalservico"] + df_servicos["totalcortesia"]
 
-        # # Adiciona no dataframe SERVICOS a coluna "Month" formada pelo ANO e o MES da coluna "datahorabaixa"
-        df_servicos["Month"] = df_servicos["datahorabaixa"].dt.strftime(
-            '%Y-%m')
+        # Adiciona no dataframe SERVICOS a coluna "Month" formada pelo ANO e o MES da coluna "datahorabaixa"
+        df_servicos["Month"] = df_servicos["datahorabaixa"].dt.strftime('%Y-%m')
 
         return df_servicos
     else:

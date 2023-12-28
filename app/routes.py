@@ -1,5 +1,5 @@
 from app import app
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify, abort, render_template
 import jwt
 from dotenv import dotenv_values
 import pandas as pd
@@ -86,7 +86,7 @@ def resumo(mes, ano, filial):
     # Calcula os dias úteis e os dias já passados do período que se quer avaliar com base no mes e ano informados na rota
     dias_uteis, dias_passados = calcDays(int(mes), int(ano), holidays[filial])
     
-    # ================================ Carregando os dataframes ================================
+    # ==================================== Busca as informações na API da Microworks ====================================
     df_metas = getMetas(dtInicial, dtFinal)
     df_mercadorias = getMercadorias(dtInicial, dtFinal)
     df_servicos = getServicos(dtInicial, dtFinal)
@@ -199,5 +199,30 @@ def resumo(mes, ano, filial):
     # Converte o DataFrame para um dicionário
     dados_formatados = df_final.to_dict(orient='records')
 
-    return jsonify(dados_formatados)
+    return jsonify(dados_formatados), 200
     
+@app.route('/teste/<mes>/<ano>/<filial>')
+def teste(mes, ano, filial):
+
+    # Calcula a data inicial e final do período que se quer avaliar com base no mes e ano informados na rota
+    dtInicial, dtFinal = getDatesInOut(mes, ano)
+
+    # ==================================== Busca as informações na API da Microworks ====================================
+    df_metas = getMetas(dtInicial, dtFinal)
+    df_mercadorias = getMercadorias(dtInicial, dtFinal)
+    df_servicos = getServicos(dtInicial, dtFinal)
+
+    # ==================================== Verifica se houve erro na resposta da API ====================================
+    if df_metas is None:
+        abort(404, "A resposta da API/Metas não é um DataFrame válido")
+
+    if df_mercadorias is None:
+        abort(404, "A resposta da API/Mercadorias não é um DataFrame válido")
+
+    df_mercadorias = df_mercadorias.groupby(['filial','vendedor'])['valortotal'].sum()
+
+    # Converte o DataFrame em HTML
+    df_mercadorias_html = df_mercadorias.reset_index().to_html(index=False)
+
+    # Renderiza o template passando os dados necessários
+    return render_template('teste.html', df_mercadorias_html=df_mercadorias_html)
