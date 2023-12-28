@@ -13,6 +13,16 @@ from app.api.api import getMetas, getMercadorias, getServicos
 # Carrega os valores do .env
 config = dotenv_values(".env")
 
+# ===================================== Concatena todos os vendedores da empresa ====================================
+vendedores = []
+consultores = []
+
+for nome, info in employee_info_mapping.items():
+    if info["canal"] == "balcao":
+        vendedores.append(nome)
+    elif info["canal"] == "oficina":
+        consultores.append(nome)
+
 # Decorator para validar o token
 def verify_token(f):
     @wraps(f)
@@ -100,16 +110,6 @@ def resumo(mes, ano, filial):
 
     if df_servicos is None:
         abort(404, "A resposta da API/Serviços não é um DataFrame válido")
-
-    # ===================================== Concatena todos os vendedores da empresa ====================================
-    vendedores = []
-    consultores = []
-
-    for nome, info in employee_info_mapping.items():
-        if info["canal"] == "balcao":
-            vendedores.append(nome)
-        elif info["canal"] == "oficina":
-            consultores.append(nome)
 
     # ================================== CALCULA E ORGANIZA AS INFORMAÇÃO NO DF_FINAL ===================================
     # Metas de MERCADORIAS por filial
@@ -210,7 +210,6 @@ def teste(mes, ano, filial):
     # ==================================== Busca as informações na API da Microworks ====================================
     df_metas = getMetas(dtInicial, dtFinal)
     df_mercadorias = getMercadorias(dtInicial, dtFinal)
-    df_servicos = getServicos(dtInicial, dtFinal)
 
     # ==================================== Verifica se houve erro na resposta da API ====================================
     if df_metas is None:
@@ -219,10 +218,28 @@ def teste(mes, ano, filial):
     if df_mercadorias is None:
         abort(404, "A resposta da API/Mercadorias não é um DataFrame válido")
 
+    # ====================================================== METAS ======================================================
+    df_metas = df_metas[df_metas['vendedor'].isin(vendedores + consultores)]
+    df_metas = df_metas[df_metas["tipo"] == "MERCADORIAS"]
+    df_metas = df_metas.groupby(['filial','vendedor'])['valormeta'].sum()
+    df_metas = pd.DataFrame(df_metas)
+
+    # Converte o DataFrame em table HTML e carrega o template
+    # df_metas_html = df_metas.reset_index().to_html(index=False)
+    # return render_template('teste.html', df_html=df_metas_html)
+
+    # =================================================== MERCADORIAS ===================================================
+    df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(vendedores + consultores)]
     df_mercadorias = df_mercadorias.groupby(['filial','vendedor'])['valortotal'].sum()
+    df_mercadorias = pd.DataFrame(df_mercadorias)
 
-    # Converte o DataFrame em HTML
-    df_mercadorias_html = df_mercadorias.reset_index().to_html(index=False)
+    # Converte o DataFrame em table HTML e carrega o template
+    # df_mercadorias_html = df_mercadorias.reset_index().to_html(index=False)
+    # return render_template('teste.html', df_html=df_mercadorias_html)
 
-    # Renderiza o template passando os dados necessários
-    return render_template('teste.html', df_mercadorias_html=df_mercadorias_html)
+    # ============================================ MESCLA MERCADORIAS/METAS ============================================
+    df_vendas_mercadorias = df_mercadorias.merge(df_metas, on=["vendedor"], how="left")
+
+    # Converte o DataFrame em table HTML e carrega o template
+    df_vendas_mercadorias_html = df_vendas_mercadorias.reset_index().to_html(index=False)
+    return render_template('teste.html', df_html=df_vendas_mercadorias_html)
