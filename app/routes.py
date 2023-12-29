@@ -215,7 +215,7 @@ def teste(mes, ano, filial):
     if df_metas is None:
         abort(404, "A resposta da API/Metas não é um DataFrame válido")
 
-    if df_mercadorias is None:
+    # if df_mercadorias is None:
         abort(404, "A resposta da API/Mercadorias não é um DataFrame válido")
 
     # ====================================================== METAS ======================================================
@@ -225,21 +225,21 @@ def teste(mes, ano, filial):
     df_metas = pd.DataFrame(df_metas)
 
     # Converte o DataFrame em table HTML e carrega o template
-    # df_metas_html = df_metas.reset_index().to_html(index=False)
-    # return render_template('teste.html', df_html=df_metas_html)
+    df_metas_html = df_metas.reset_index().to_html(index=False)
+    return render_template('teste.html', df_html=df_metas_html)
 
     # =================================================== MERCADORIAS ===================================================
-    df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(vendedores + consultores)]
-    df_mercadorias = df_mercadorias.groupby(['filial','vendedor'])['valortotal'].sum()
-    df_mercadorias = pd.DataFrame(df_mercadorias)
+    # df_mercadorias = df_mercadorias[df_mercadorias['vendedor'].isin(vendedores + consultores)]
+    # df_mercadorias = df_mercadorias.groupby(['filial','vendedor','tipomercadoria'])['valortotal'].sum()
+    # df_mercadorias = pd.DataFrame(df_mercadorias)
 
     # Converte o DataFrame em table HTML e carrega o template
     # df_mercadorias_html = df_mercadorias.reset_index().to_html(index=False)
     # return render_template('teste.html', df_html=df_mercadorias_html)
 
     # ============================================ MESCLA MERCADORIAS/METAS ============================================
-    df_vendas_mercadorias = df_mercadorias.merge(df_metas, on=["vendedor"], how="left")
+    # df_vendas_mercadorias = df_mercadorias.merge(df_metas, on=["vendedor"], how="left")
 
-    # Converte o DataFrame em table HTML e carrega o template
-    df_vendas_mercadorias_html = df_vendas_mercadorias.reset_index().to_html(index=False)
-    return render_template('teste.html', df_html=df_vendas_mercadorias_html)
+    # # Converte o DataFrame em table HTML e carrega o template
+    # df_vendas_mercadorias_html = df_vendas_mercadorias.reset_index().to_html(index=False)
+    # return render_template('teste.html', df_html=df_vendas_mercadorias_html)

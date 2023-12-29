@@ -37,42 +37,46 @@ def getMetas(dtInicial, dtFinal):
         data_json = response.json()
         df_metas = pd.DataFrame(data_json)
 
-        # Lista de "PessoaVendedor" que você deseja excluir
-        pessoas_a_excluir = ["MALLON CONCESSIONARIA DE VEICULOS COMERCIAIS LTDA",
-                             "JOAO VITOR AMANCIO DE OLIVEIRA", "SAMUEL DVOJATZKI"]
+        # Verifica se o retorno é vazio
+        if df_metas.empty:
+            return None
+        else:
+            # Lista de "PessoaVendedor" que você deseja excluir
+            pessoas_a_excluir = ["MALLON CONCESSIONARIA DE VEICULOS COMERCIAIS LTDA",
+                                "JOAO VITOR AMANCIO DE OLIVEIRA", "SAMUEL DVOJATZKI"]
 
-        # Adiciona uma coluna definindo se o CANAL de Vendas e a Filial ou GA/MTS
-        # ====================================================================
-        def define_emp(row):
-            # Importa as definições dos colaboradores do employees_info.py
-            colaborador_info = employee_info_mapping.get(row['nomepessoa'])
+            # Adiciona uma coluna definindo se o CANAL de Vendas e a Filial ou GA/MTS
+            # ====================================================================
+            def define_emp(row):
+                # Importa as definições dos colaboradores do employees_info.py
+                colaborador_info = employee_info_mapping.get(row['nomepessoa'])
 
-            if colaborador_info:
-                return colaborador_info['filial'], colaborador_info['canal']
-            else:
-                return row['empresa'], None
+                if colaborador_info:
+                    return colaborador_info['filial'], colaborador_info['canal']
+                else:
+                    return row['empresa'], None
 
-        df_metas[['filial', 'canal']
-                 ] = df_metas.apply(define_emp, axis=1, result_type='expand')
-        # ====================================================================
+            df_metas[['filial', 'canal']
+                    ] = df_metas.apply(define_emp, axis=1, result_type='expand')
+            # ====================================================================
 
-        # Cria um novo DataFrame excluindo as linhas com os "PessoaVendedor" especificados
-        df_metas = df_metas.loc[~df_metas['nomepessoa'].isin(
-            pessoas_a_excluir)]
-        # Adiciona os campos 'vendedor' e 'empresa' pra fica igual nos 3 df
-        df_metas['vendedor'] = df_metas['nomepessoa']
+            # Cria um novo DataFrame excluindo as linhas com os "PessoaVendedor" especificados
+            df_metas = df_metas.loc[~df_metas['nomepessoa'].isin(
+                pessoas_a_excluir)]
+            # Adiciona os campos 'vendedor' e 'empresa' pra fica igual nos 3 df
+            df_metas['vendedor'] = df_metas['nomepessoa']
 
-        # Adiciona o campo tipo para reduzir a descrição do tipometa (pega apenas a ultima palavra MERCADORIAS ou SERVIÇOS)
-        df_metas['tipo'] = df_metas['tipometa'].str.split().str[-1]
+            # Adiciona o campo tipo para reduzir a descrição do tipometa (pega apenas a ultima palavra MERCADORIAS ou SERVIÇOS)
+            df_metas['tipo'] = df_metas['tipometa'].str.split().str[-1]
 
-        # Converte o campo "anomes" do dataset METAS de string para datetime
-        df_metas["anomes"] = pd.to_datetime(df_metas['anomes'], format="mixed")
+            # Converte o campo "anomes" do dataset METAS de string para datetime
+            df_metas["anomes"] = pd.to_datetime(df_metas['anomes'], format="mixed")
 
-        # Adiciona no data frame METAS a coluna "Month" formada pelo ANO e o MES da coluna "anomes"
-        df_metas["Month"] = df_metas["anomes"].dt.strftime('%Y-%m')
-        df_metas["Day"] = df_metas["anomes"].dt.strftime('%d')
+            # Adiciona no data frame METAS a coluna "Month" formada pelo ANO e o MES da coluna "anomes"
+            df_metas["Month"] = df_metas["anomes"].dt.strftime('%Y-%m')
+            df_metas["Day"] = df_metas["anomes"].dt.strftime('%d')
 
-        return df_metas
+            return df_metas
     else:
         # return response.status_code, response.text
         return None
@@ -102,43 +106,46 @@ def getMercadorias(dtInicial, dtFinal):
         # Converte a resposta JSON em um DataFrame do Pandas
         data_json = response.json()
         df_mercadorias = pd.DataFrame(data_json)
+        
+        # Verifica se o retorno é vazio
+        if df_mercadorias.empty:
+            return None
+        else:
+            # Converte o campo "datamovimentacao" do dataset MERCADORIAS de string para datetime
+            df_mercadorias["datamovimentacao"] = pd.to_datetime(
+                df_mercadorias['datamovimentacao'], format="mixed")
+            # Adiciona os campos 'vendedor' e 'empresa' pra fica igual nos 3 df
+            # df_mercadorias['vendedor'] = df_mercadorias['pessoavendedor']
+            df_mercadorias['vendedor'] = df_mercadorias.apply(lambda row: row['pessoaconsultor'] if pd.notna(
+                row['pessoaconsultor']) else row['pessoavendedor'], axis=1)
 
-        # Converte o campo "datamovimentacao" do dataset MERCADORIAS de string para datetime
-        df_mercadorias["datamovimentacao"] = pd.to_datetime(
-            df_mercadorias['datamovimentacao'], format="mixed")
-        # Adiciona os campos 'vendedor' e 'empresa' pra fica igual nos 3 df
-        # df_mercadorias['vendedor'] = df_mercadorias['pessoavendedor']
-        df_mercadorias['vendedor'] = df_mercadorias.apply(lambda row: row['pessoaconsultor'] if pd.notna(
-            row['pessoaconsultor']) else row['pessoavendedor'], axis=1)
+            # Adiciona uma coluna definindo se o CANAL de Vendas e a Filial ou GA/MTS
+            # ====================================================================
+            def define_emp(row):
+                # Importa as definições dos colaboradores do employees_info.py
+                colaborador_info = employee_info_mapping.get(row['vendedor'])
 
-        # Adiciona uma coluna definindo se o CANAL de Vendas e a Filial ou GA/MTS
-        # ====================================================================
-        def define_emp(row):
-            # Importa as definições dos colaboradores do employees_info.py
-            colaborador_info = employee_info_mapping.get(row['vendedor'])
+                if colaborador_info:
+                    return colaborador_info['filial'], colaborador_info['canal']
+                else:
+                    return row['empresareduzida'], None
 
-            if colaborador_info:
-                return colaborador_info['filial'], colaborador_info['canal']
-            else:
-                return row['empresareduzida'], None
+            df_mercadorias[['filial', 'canal']
+                        ] = df_mercadorias.apply(define_emp, axis=1, result_type='expand')
+            # ====================================================================
 
-        df_mercadorias[['filial', 'canal']
-                       ] = df_mercadorias.apply(define_emp, axis=1, result_type='expand')
-        # ====================================================================
+            # Adiciona uma coluna chamada 'totalmercadoria' para ficar igual ao 'df_servicos' e facilitar a soma de vendas de mercadorias
+            df_mercadorias['totalmercadoria'] = df_mercadorias['valortotal']
+            # df_mercadorias["Month"] = df_mercadorias["datamovimentacao"].apply(lambda x: str(x.year) + "-" + str(x.month))
+            df_mercadorias["Month"] = df_mercadorias["datamovimentacao"].dt.strftime(
+                '%Y-%m')
+            df_mercadorias["Day"] = df_mercadorias["datamovimentacao"].dt.strftime(
+                '%d')
 
-        # Adiciona uma coluna chamada 'totalmercadoria' para ficar igual ao 'df_servicos' e facilitar a soma de vendas de mercadorias
-        df_mercadorias['totalmercadoria'] = df_mercadorias['valortotal']
-        # df_mercadorias["Month"] = df_mercadorias["datamovimentacao"].apply(lambda x: str(x.year) + "-" + str(x.month))
-        df_mercadorias["Month"] = df_mercadorias["datamovimentacao"].dt.strftime(
-            '%Y-%m')
-        df_mercadorias["Day"] = df_mercadorias["datamovimentacao"].dt.strftime(
-            '%d')
-
-        return df_mercadorias
+            return df_mercadorias
     else:
         # return response.status_code, response.text
         return None
-
 
 def getServicos(dtInicial, dtFinal):
     # Corpo para consulta de SERVICOS
