@@ -53,6 +53,15 @@ def verify_token(f):
 
     return wrapper
 
+# Cria função que irá formatar os números
+def formatar(valor):
+    valor_formatado = "{:,.2f}".format(valor)
+    valor_formatado = valor_formatado.replace(',', '_')
+    valor_formatado = valor_formatado.replace('.', ',')
+    valor_formatado = valor_formatado.replace('_', '.')
+
+    return valor_formatado
+
 @app.route('/')
 def index():
     resultado = {
@@ -67,6 +76,30 @@ def token():
         "message": "Token validado com sucesso."
     }
     return jsonify(resultado), 200
+
+@app.route('/metas/<mes>/<ano>', methods=['POST'])
+@verify_token
+def metas(mes, ano):
+
+    # Calcula a data inicial e final do período que se quer avaliar com base no mes e ano informados na rota
+    dtInicial, dtFinal = getDatesInOut(mes, ano)
+
+    # ==================================== Busca as informações na API da Microworks ====================================
+    df_metas = getMetas(dtInicial, dtFinal)
+
+    # ==================================== Verifica se houve erro na resposta da API ====================================
+    if df_metas is None:
+        abort(404, "A resposta da API/Metas não é um DataFrame válido")
+
+    df_metas = pd.DataFrame(df_metas)
+    df_metas = df_metas[['filial', 'vendedor', 'tipo', 'valormeta']]
+    df_metas = df_metas.sort_values(['filial', 'vendedor'])
+
+    df_metas['valormeta'] = df_metas['valormeta'].apply(formatar)
+
+    # Converte o DataFrame em table HTML e carrega o template
+    df_metas_html = df_metas.reset_index().to_html(index=False)
+    return render_template('teste.html', df_html=df_metas_html)
 
 @app.route('/dias-uteis/<mes>/<ano>/<filial>', methods=['POST'])
 @verify_token
@@ -178,14 +211,7 @@ def resumo(mes, ano, filial):
             'valormeta_y': 'metaServicos',
         })
 
-    # Cria função que irá formatar os números
-    def formatar(valor):
-        valor_formatado = "{:,.2f}".format(valor)
-        valor_formatado = valor_formatado.replace(',', '_')
-        valor_formatado = valor_formatado.replace('.', ',')
-        valor_formatado = valor_formatado.replace('_', '.')
-
-        return valor_formatado
+   
 
     # Aplica a formatação para as colunas desejadas
     colunas_para_formatar = ["metaPecas", "vendidoPecas", "percentagePecas",
